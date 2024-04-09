@@ -3,12 +3,12 @@ import os
 
 def get_env() -> dict:
     secrets = {
-        "DB_USER": os.getenv("DB_USER"),
-        "DB_PASSWORD": os.getenv("DB_PASSWORD"),
-        "DB_HOST": os.getenv("DB_HOST"),
-        "DB_PORT": os.getenv("DB_PORT"),
-        "DB_NAME": os.getenv("DB_NAME"),
-        "JWT_SECRET": os.getenv("JWT_SECRET")
+        "username": os.getenv("DB_USER"),
+        "password": os.getenv("DB_PASSWORD"),
+        "db_host": os.getenv("DB_HOST"),
+        "db_port": os.getenv("DB_PORT"),
+        "db_name": os.getenv("DB_NAME"),
+        "jwt_key": os.getenv("JWT_SECRET")
     }
     return secrets
 
