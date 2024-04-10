@@ -1,0 +1,92 @@
+name: Release_package
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "main"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: setup_python
+        name: Setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+          cache: pip
+
+      - id: deps
+        name: Install requirements
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - id: build
+        name: Build python package
+        run: |
+          python -m build .
+
+      - id: upload
+        name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: load_secrets
+          path: dist/*.tar.gz
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: download
+        name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: load_secrets
+          path: dist/
+
+      - id: sign
+        name: Sign package
+        uses: sigstore/gh-action-sigstore-python@v2.1.1
+        with:
+          inputs: ./dist/*.tar.gz
+
+      - id: prev_version
+        name: Get previous version
+        uses: WyriHaximus/github-action-get-previous-tag@v1.4.0
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          fallback: 0.0.0
+
+      - id: next_version
+        name: Get next version
+        uses: WyriHaximus/github-action-next-semvers@v1.2.1
+        with:
+          version: ${{ steps.prev_version.outputs.tag }}
+
+      - id: release
+        name: Github release package
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          gh release create '${{ steps.next_version.outputs.v_patch }}' --repo '${{ github.repository }}' --notes ""
+
+      - id: upload_sig
+        name: Upload signatures
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload '${{ steps.next_version.outputs.v_patch }}' dist/** --repo '${{ github.repository }}'
+
